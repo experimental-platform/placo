@@ -1,0 +1,20 @@
+language: go
+env:
+- os: linux
+  dist: xenial
+  go: 1.7
+install:
+- go get github.com/Masterminds/glide
+- go install github.com/Masterminds/glide
+- glide install
+- go build -v -o platconf-$TRAVIS_TAG -ldflags "-X main.VersionTag=$TRAVIS_TAG"
+script:
+- go test -v
+deploy:
+  provider: releases
+  api_key:
+    secure: sOB3gea+XPIvbxEH+4MyRJbZsH8f3v4vd4G7hzeijs26Ox48oaatE7W2Cyx9HzpF7nKC93kRUrXoNLLwxmLU0nBSq8BjhHYtFGkSKCRulh8/5Umr77RdiJoTJ4w8MZWXkfVlygadgFkY7tZdVcuTPy7GwfykG0sLTKXniFeRta2sh9rolrqh9UEihtFgSIA5Jga6aR6zpy7wD5Q6rW4hNCo1lC1mdR9ttdddCGn2LE20VMzdhffxeIGRPzpqIVlDX1JnWL/4nHvMvSWK5SuEsUgNopuSbf+C+eu4X5PlGhMuHcCES3ZmYJOvoNusdE+vHGFYawJlpQ9j8kyipURzkwWc3+ziztP6ZJFp1ix00Xy/F8cfmDfWLue6UxmpKr5HcsJfGs57Ac+r1siDuRNQCyB5ICzhVuubp2xdmQSsw0gEiYEfAY1//J4IWi9TEjjL2GGuWQno5nuNDGpFVw9Y7yuYD594OQ0S6XHtns7IwhcaME9xjO5dNHwN00MR9HwBYyenJjoC+G6xZZbqJ25rxqsvRcVrajK6t0gEOV4CI8dnV65mzwHeUYuXSV/TDLe6sk8rksWZATqY7rKxudRenKXkmFbLtskM77dm0zDtOCUBjL4IcKycqCQ6nivnwjwYXQRinf3j9PgII67rNBFRaYlylqdnNnJwvLHAniKNT2g=
+  file: platconf-$TRAVIS_TAG
+  on:
+    tags: true
+    repo: experimental-platform/platconf
