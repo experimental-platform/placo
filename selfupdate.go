@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 )
 
 type githubReleaseAsset struct {
@@ -84,20 +84,30 @@ func runSelfUpdate(force bool) error {
 		return fmt.Errorf("Latest release has %d assets. Cancelling.", len(latestRelease.Assets))
 	}
 
-	return installPlatconfFromURL(latestRelease.Assets[0].BrowserDownloadURL)
+	requireRoot()
+
+	err = installPlatconfFromURL(latestRelease.Assets[0].BrowserDownloadURL)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Self-update completed successfully.")
+	return nil
 }
 
 func installPlatconfFromURL(url string) error {
-	tempFile, err := ioutil.TempFile("", "platconf_selfupdate_dl")
-	if err != nil {
-		return fmt.Errorf("installPlatconfFromURL: TempFile: %s", err.Error())
-	}
-	stat, err := tempFile.Stat()
-	if err != nil {
-		return fmt.Errorf("installPlatconfFromURL: Stat: %s", err.Error())
-	}
+	targetBinaryDir := "/opt/bin"
+	targetBinaryFullPath := path.Join(targetBinaryDir, "platconf")
+	tempFileFullPath := path.Join(targetBinaryDir, "platconf-download.tmp")
 
-	fmt.Printf("Downloading new binary to '%s'\n", stat.Name())
+	tempFile, err := os.OpenFile(tempFileFullPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
+	if err != nil {
+		return fmt.Errorf("installPlatconfFromURL: OpenFile: %s", err.Error())
+	}
+	defer os.Remove(tempFileFullPath)
+	defer tempFile.Close()
+
+	fmt.Printf("Downloading new binary to '%s'\n", tempFileFullPath)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -107,6 +117,29 @@ func installPlatconfFromURL(url string) error {
 	_, err = io.Copy(tempFile, resp.Body)
 	if err != nil {
 		return fmt.Errorf("installPlatconfFromURL: Copy: %s", err.Error())
+	}
+
+	err = tempFile.Sync()
+	if err != nil {
+		return fmt.Errorf("installPlatconfFromURL: Sync: %s", err.Error())
+	}
+
+	tempFile.Close()
+
+	fmt.Printf("Installing the new binary to '%s'\n", targetBinaryFullPath)
+	err = os.MkdirAll(targetBinaryDir, 0755)
+	if err != nil {
+		return fmt.Errorf("installPlatconfFromURL: MkdirAll: %s", err.Error())
+	}
+
+	err = os.Rename(tempFileFullPath, targetBinaryFullPath)
+	if err != nil {
+		return fmt.Errorf("installPlatconfFromURL: Rename: %s", err.Error())
+	}
+
+	err = os.Chmod(targetBinaryFullPath, 0755)
+	if err != nil {
+		return fmt.Errorf("installPlatconfFromURL: Chmod: %s", err.Error())
 	}
 
 	return nil
