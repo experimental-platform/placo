@@ -7,6 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// This effectively only tests the JSON tags on the 'githubRelease'
+// and 'githubReleaseAsset' structures by trying to deserialize them.
+// It doesn't cover any actual code statements.
 func TestUnmarshalRelease(t *testing.T) {
 	githubReleaseTestJSON := `{
   "url": "https://api.github.com/repos/experimental-platform/release-tagger/releases/4842813",

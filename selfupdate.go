@@ -84,6 +84,7 @@ func runSelfUpdate(force bool) error {
 		return fmt.Errorf("Latest release has %d assets. Cancelling.", len(latestRelease.Assets))
 	}
 
+	// Previous steps made no changes. Now let's check if we're root before we actually try to do something.
 	requireRoot()
 
 	err = installPlatconfFromURL(latestRelease.Assets[0].BrowserDownloadURL)
@@ -100,6 +101,7 @@ func installPlatconfFromURL(url string) error {
 	targetBinaryFullPath := path.Join(targetBinaryDir, "platconf")
 	tempFileFullPath := path.Join(targetBinaryDir, "platconf-download.tmp")
 
+	// first we download the binary from github release assets to a temporary file
 	tempFile, err := os.OpenFile(tempFileFullPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0755)
 	if err != nil {
 		return fmt.Errorf("installPlatconfFromURL: OpenFile: %s", err.Error())
@@ -126,6 +128,11 @@ func installPlatconfFromURL(url string) error {
 
 	tempFile.Close()
 
+	// Now we relink the new file under the old binary's path.
+	// We cannot just write to the destination path directly for two reasons:
+	// 1. If we fail halfway through the operation, we have no working platconf.
+	// 2. We would overwrite the currently running binary code, causing it to bail.
+	//    Yes, I checked, it actually dies.
 	fmt.Printf("Installing the new binary to '%s'\n", targetBinaryFullPath)
 	err = os.MkdirAll(targetBinaryDir, 0755)
 	if err != nil {
