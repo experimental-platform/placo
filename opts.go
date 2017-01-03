@@ -1,8 +1,11 @@
 package main
 
+import (
+	"github.com/experimental-platform/platconf/update"
+)
+
 var opts struct {
-	Update struct {
-	} `command:"update"`
+	Update     update.Opts    `command:"update"`
 	SelfUpdate selfupdateOpts `command:"selfupdate"`
 	Version    versionOpts    `command:"version"`
 }
