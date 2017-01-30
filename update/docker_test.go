@@ -247,5 +247,5 @@ func TestExtractDockerImage(t *testing.T) {
 
 	// 'e'
 	assert.Equal(t, "e", rootInfo[2].Name())
-	assert.Equal(t, "Lrwxr-xr-x", rootInfo[2].Mode().String())
+	assert.NotZero(t, rootInfo[2].Mode()|os.ModeSymlink, "the file 'e' is not a symlink")
 }
