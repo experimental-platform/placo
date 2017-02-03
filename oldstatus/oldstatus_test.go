@@ -3,10 +3,13 @@ package oldstatus
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -94,6 +97,58 @@ func TestGetHTML(t *testing.T) {
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, htmlBody, string(responseBody))
+}
+
+func TestPutOnUnixSocket(t *testing.T) {
+	// prepare path for the socket
+	f, err := ioutil.TempFile("", "platconf-unittest-")
+	assert.Nil(t, err)
+	socketPath := f.Name()
+	f.Close()
+	os.Remove(socketPath)
+
+	// start
+	var status StatusData
+	err = listenOnUnixSocket(&status, socketPath)
+	defer os.Remove(socketPath)
+	assert.Nil(t, err)
+
+	// make a UNIX socket-connected HTTP client
+	fakeDial := func(proto, addr string) (conn net.Conn, err error) {
+		return net.Dial("unix", socketPath)
+	}
+
+	client := http.Client{
+		Transport: &http.Transport{
+			Dial: fakeDial,
+		},
+	}
+
+	// test1
+	req1, err := http.NewRequest("PUT", "http://foobar/status", strings.NewReader(`{"status": "foobar1"}`))
+	assert.Nil(t, err)
+	resp1, err := client.Do(req1)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusAccepted, resp1.StatusCode)
+
+	status.RLock()
+	assert.Equal(t, "foobar1", status.Status)
+	assert.Nil(t, status.Progress)
+	assert.Nil(t, status.What)
+	status.RUnlock()
+
+	// test2
+	req2, err := http.NewRequest("PUT", "http://foobar/status", strings.NewReader(`{"status": "whatever", "what": "something", "progress": 12312.12412}`))
+	assert.Nil(t, err)
+	resp2, err := client.Do(req2)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusAccepted, resp2.StatusCode)
+
+	status.RLock()
+	assert.Equal(t, "whatever", status.Status)
+	assert.Equal(t, float32(12312.12412), *status.Progress)
+	assert.Equal(t, "something", *status.What)
+	status.RUnlock()
 }
 
 func TestUpdateByFile2(t *testing.T) {
