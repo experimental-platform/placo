@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -143,6 +144,45 @@ func TestPutOnUnixSocket(t *testing.T) {
 	resp2, err := client.Do(req2)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusAccepted, resp2.StatusCode)
+
+	status.RLock()
+	assert.Equal(t, "whatever", status.Status)
+	assert.Equal(t, float32(12312.12412), *status.Progress)
+	assert.Equal(t, "something", *status.What)
+	status.RUnlock()
+}
+
+func TestFileWatcher(t *testing.T) {
+	// prepare path for the socket
+	f, err := ioutil.TempFile("", "platconf-unittest-")
+	assert.Nil(t, err)
+	path := f.Name()
+	f.Close()
+	defer os.Remove(path)
+
+	// start
+	var status StatusData
+	go func() {
+		errWatcher := watchStatusFileForChange(&status, path)
+		assert.Nil(t, errWatcher)
+	}()
+	time.Sleep(time.Second)
+
+	// test1
+	err = ioutil.WriteFile(path, []byte(`{"status": "foobar1"}`), 0644)
+	assert.Nil(t, err)
+	time.Sleep(time.Second)
+
+	status.RLock()
+	assert.Equal(t, "foobar1", status.Status)
+	assert.Nil(t, status.Progress)
+	assert.Nil(t, status.What)
+	status.RUnlock()
+
+	// test2
+	err = ioutil.WriteFile(path, []byte(`{"status": "whatever", "what": "something", "progress": 12312.12412}`), 0644)
+	assert.Nil(t, err)
+	time.Sleep(time.Second)
 
 	status.RLock()
 	assert.Equal(t, "whatever", status.Status)
