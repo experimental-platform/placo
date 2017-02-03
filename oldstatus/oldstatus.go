@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -76,6 +77,29 @@ func watchStatusFileForChange(status *StatusData, filePath string) error {
 	}
 }
 
+func getStatusReadMux(status *StatusData) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
+		status.RLock()
+		defer status.RUnlock()
+		w.Header().Set("Content-Type", "application/json")
+		encoder := json.NewEncoder(w)
+		encoder.Encode(&status)
+	})
+
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not found.", http.StatusNotFound)
+	})
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(htmlBody))
+		log.Printf("Serving the status HTML page to '%s'", r.RemoteAddr)
+	})
+
+	return mux
+}
+
 // Execute is the function ran when the 'oldstatus' command is used
 func (o *Opts) Execute(args []string) error {
 	var status StatusData
@@ -87,25 +111,19 @@ func (o *Opts) Execute(args []string) error {
 		go watchStatusFileForChange(&status, statusFilePath)
 	}
 
-	http.HandleFunc("/json", func(w http.ResponseWriter, r *http.Request) {
-		status.RLock()
-		defer status.RUnlock()
-		w.Header().Set("Content-Type", "application/json")
-		encoder := json.NewEncoder(w)
-		encoder.Encode(&status)
-	})
-
-	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Not found.", http.StatusNotFound)
-	})
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(htmlBody))
-		log.Printf("Serving the status HTML page to '%s'", r.RemoteAddr)
-	})
+	server := &http.Server{
+		Handler: getStatusReadMux(&status),
+	}
 
 	log.Println("Starting platform-install-status")
-	err = http.ListenAndServe(fmt.Sprintf(":%d", o.Port), nil)
+	// We're explicitly opening a listener first to check if there is already
+	// an instance running. If we could bind to the port successfully then
+	// we can also safely remove the UNIX domain socket.
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", o.Port))
+	if err != nil {
+		return err
+	}
+
+	err = server.Serve(listener)
 	return err
 }
