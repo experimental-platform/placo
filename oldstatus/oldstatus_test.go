@@ -66,6 +66,36 @@ func TestGetStatus(t *testing.T) {
 	status.RUnlock()
 }
 
+func TestGetFavicon(t *testing.T) {
+	// prepare
+	mux := getStatusReadMux(nil)
+	srv := httptest.NewServer(mux)
+
+	u, err := url.Parse(srv.URL)
+	assert.Nil(t, err)
+	u.Path = path.Join(u.Path, "favicon.ico")
+
+	resp, err := http.Get(u.String())
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestGetHTML(t *testing.T) {
+	// prepare
+	mux := getStatusReadMux(nil)
+	srv := httptest.NewServer(mux)
+
+	u, err := url.Parse(srv.URL)
+	assert.Nil(t, err)
+	u.Path = path.Join(u.Path)
+
+	resp, err := http.Get(u.String())
+	assert.Nil(t, err)
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, htmlBody, string(responseBody))
+}
+
 func TestUpdateByFile2(t *testing.T) {
 	preservedStatusFilePath := statusFilePath
 	defer func() { statusFilePath = preservedStatusFilePath }()
