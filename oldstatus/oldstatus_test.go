@@ -159,4 +159,5 @@ func TestUpdateByFile2(t *testing.T) {
 	assert.Nil(t, err)
 	statusFilePath = f.Name()
 	f.Close()
+	defer os.Remove(statusFilePath)
 }
