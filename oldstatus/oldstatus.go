@@ -61,13 +61,13 @@ func watchStatusFileForChange(status *StatusData, filePath string) error {
 		log.Fatalf("Failed to add file '%s' to the file watcher: %s", filePath, err.Error())
 	}
 
-	log.Println("Status file watcher started on", statusFilePath)
+	log.Println("Status file watcher started on", filePath)
 
 	for {
 		select {
 		case event := <-watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				err := updateStatusFromFile(status, statusFilePath)
+				err := updateStatusFromFile(status, filePath)
 				if err != nil {
 					log.Println("ERROR: failed to read status from SKVS file:", err.Error())
 				}
