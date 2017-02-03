@@ -2,7 +2,9 @@ package oldstatus
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -189,4 +191,81 @@ func TestFileWatcher(t *testing.T) {
 	assert.Equal(t, float32(12312.12412), *status.Progress)
 	assert.Equal(t, "something", *status.What)
 	status.RUnlock()
+}
+
+func TestIntegration(t *testing.T) {
+	// temporary status file
+	f, err := ioutil.TempFile("", "platconf-unittest-")
+	assert.Nil(t, err)
+	statusFilePath := f.Name()
+	f.Close()
+	defer os.Remove(statusFilePath)
+	assert.Nil(t, err)
+
+	// temporary socket
+	f, err = ioutil.TempFile("", "platconf-unittest-")
+	assert.Nil(t, err)
+	socketPath := f.Name()
+	f.Close()
+	os.Remove(socketPath)
+
+	// start
+	port := (rand.Int()%1000 + 7000) // random port in range 7000-7999
+	o := Opts{
+		Port:         port,
+		StatusFile:   statusFilePath,
+		StatusSocket: socketPath,
+	}
+
+	go o.Execute([]string{})
+	time.Sleep(time.Second)
+
+	var status StatusData
+
+	// test1
+	err = ioutil.WriteFile(statusFilePath, []byte(`{"status": "foobar1"}`), 0644)
+	assert.Nil(t, err)
+	time.Sleep(time.Second)
+
+	resp1, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/json", port))
+	assert.Nil(t, err)
+
+	dec1 := json.NewDecoder(resp1.Body)
+	err = dec1.Decode(&status)
+	assert.Nil(t, err)
+
+	// no locking needed, as we are the only user of this variable
+	assert.Equal(t, "foobar1", status.Status)
+	assert.Nil(t, status.Progress)
+	assert.Nil(t, status.What)
+
+	// test2
+	// make a UNIX socket-connected HTTP client
+	fakeDial := func(proto, addr string) (conn net.Conn, err error) {
+		return net.Dial("unix", socketPath)
+	}
+
+	client := http.Client{
+		Transport: &http.Transport{
+			Dial: fakeDial,
+		},
+	}
+
+	req1, err := http.NewRequest("PUT", fmt.Sprintf("http://127.0.0.1:%d/status", port), strings.NewReader(`{"status": "whatever", "what": "something", "progress": 12312.12412}`))
+	assert.Nil(t, err)
+	resp2, err := client.Do(req1)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusAccepted, resp2.StatusCode)
+
+	resp3, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/json", port))
+	assert.Nil(t, err)
+
+	dec2 := json.NewDecoder(resp3.Body)
+	err = dec2.Decode(&status)
+	assert.Nil(t, err)
+
+	// no locking needed, as we are the only user of this variable
+	assert.Equal(t, "whatever", status.Status)
+	assert.Equal(t, float32(12312.12412), *status.Progress)
+	assert.Equal(t, "something", *status.What)
 }
