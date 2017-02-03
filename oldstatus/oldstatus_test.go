@@ -190,14 +190,3 @@ func TestFileWatcher(t *testing.T) {
 	assert.Equal(t, "something", *status.What)
 	status.RUnlock()
 }
-
-func TestUpdateByFile2(t *testing.T) {
-	preservedStatusFilePath := statusFilePath
-	defer func() { statusFilePath = preservedStatusFilePath }()
-
-	f, err := ioutil.TempFile("", "platconf-unittest-")
-	assert.Nil(t, err)
-	statusFilePath = f.Name()
-	f.Close()
-	defer os.Remove(statusFilePath)
-}

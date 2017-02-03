@@ -14,7 +14,9 @@ import (
 
 // Opts contains command line parameters for the 'oldstatus' command
 type Opts struct {
-	Port int `short:"p" long:"port" description:"Port on which to listen" default:"7887"`
+	Port         int    `short:"p" long:"port" description:"Port on which to listen" default:"7887"`
+	StatusFile   string `long:"status-file" description:"Path to old platform-configure status file" default:"/etc/protonet/system/configure-script-status"`
+	StatusSocket string `long:"status-socket" description:"Path to status socket" default:"/var/run/platconf-status.sock"`
 }
 
 // StatusData is the data structure sent to the status page
@@ -24,9 +26,6 @@ type StatusData struct {
 	What         *string  `json:"what"`
 	sync.RWMutex `json:"-"`
 }
-
-var statusFilePath = "/etc/protonet/system/configure-script-status"
-var statusSocketPath = "/var/run/platconf-status.sock"
 
 func updateStatusFromFile(status *StatusData, filePath string) error {
 	var tempStatus StatusData
@@ -147,11 +146,11 @@ func getStatusReadMux(status *StatusData) *http.ServeMux {
 func (o *Opts) Execute(args []string) error {
 	var status StatusData
 
-	err := updateStatusFromFile(&status, statusFilePath)
+	err := updateStatusFromFile(&status, o.StatusFile)
 	if err != nil {
 		log.Printf("ERROR: failed to read status from SKVS file: %s", err.Error())
 	} else {
-		go watchStatusFileForChange(&status, statusFilePath)
+		go watchStatusFileForChange(&status, o.StatusFile)
 	}
 
 	server := &http.Server{
@@ -167,7 +166,7 @@ func (o *Opts) Execute(args []string) error {
 		return err
 	}
 
-	err = listenOnUnixSocket(&status, statusSocketPath)
+	err = listenOnUnixSocket(&status, o.StatusSocket)
 	if err != nil {
 		return err
 	}
