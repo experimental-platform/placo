@@ -149,9 +149,8 @@ func (o *Opts) Execute(args []string) error {
 	err := updateStatusFromFile(&status, o.StatusFile)
 	if err != nil {
 		log.Printf("ERROR: failed to read status from SKVS file: %s", err.Error())
-	} else {
-		go watchStatusFileForChange(&status, o.StatusFile)
 	}
+	go watchStatusFileForChange(&status, o.StatusFile)
 
 	server := &http.Server{
 		Handler: getStatusReadMux(&status),
