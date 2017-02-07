@@ -19,20 +19,7 @@ type Opts struct {
 func (o *Opts) Execute(args []string) error {
 	os.Setenv("DOCKER_API_VERSION", "1.22")
 
-	channel, channelSource := getChannel(o.Channel)
-	switch channelSource {
-	case csChannelFile:
-		fmt.Printf("Using channel '%s' from the channel file.\n", channel)
-		break
-	case csCommandLine:
-		fmt.Printf("Using channel '%s' from the command line.\n", channel)
-		break
-	case csDefault:
-		fmt.Printf("Using channel '%s'(default).\n", channel)
-		break
-	}
-
-	err := runUpdate()
+	err := runUpdate(o.Channel, "/")
 	if err != nil {
 		button(buttonError)
 		fmt.Fprintln(os.Stderr, err)
@@ -42,12 +29,20 @@ func (o *Opts) Execute(args []string) error {
 	return nil
 }
 
-func runUpdate() error {
+func runUpdate(specifiedChannel string, rootDir string) error {
+	// prepare
 	platconf.RequireRoot()
 	button(buttonRainbow)
+	setStatus("preparing", nil, nil)
 
+	// get channel
+	channel, channelSource := getChannel(specifiedChannel)
+	logChannelDetection(channel, channelSource)
+
+
+	// setup paths
 	fmt.Println("Creating folders in '/etc/systemd' in case they don't exist yet.")
-	err := setupPaths("/")
+	err = setupPaths(rootDir)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,9 @@
 package update
 
-import "io/ioutil"
+import (
+	"fmt"
+	"io/ioutil"
+)
 
 type channelSource int
 
@@ -33,4 +36,18 @@ func getChannel(commandLineChannel string) (string, channelSource) {
 	}
 
 	return string(channelFileData), csChannelFile
+}
+
+func logChannelDetection(channel string, src channelSource) {
+	switch src {
+	case csChannelFile:
+		fmt.Printf("Using channel '%s' from the channel file.\n", channel)
+		break
+	case csCommandLine:
+		fmt.Printf("Using channel '%s' from the command line.\n", channel)
+		break
+	case csDefault:
+		fmt.Printf("Using channel '%s'(default).\n", channel)
+		break
+	}
 }
