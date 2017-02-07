@@ -32,8 +32,12 @@ func TestSetupUtilityScripts(t *testing.T) {
 	err = ioutil.WriteFile(path.Join(tempRootBinDir, "protonet_zpool.sh"), []byte("barfoo"), 0755)
 	assert.Nil(t, err)
 
-	// create script that SHOULD get deleted
-	err = ioutil.WriteFile(path.Join(tempRootBinDir, "whatever.sh"), []byte("0xB33F"), 0755)
+	// create script in script dir that SHOULD get deleted
+	err = ioutil.WriteFile(path.Join(tempRootScriptsDir, "whatever.sh"), []byte("0xB33F"), 0755)
+	assert.Nil(t, err)
+
+	// create link in bin dir that SHOULD get deleted
+	err = os.Symlink(path.Join(tempRootScriptsDir, "whatever.sh"), path.Join(tempRootBinDir, "whatever-link"))
 	assert.Nil(t, err)
 
 	// create script that should get added
@@ -46,19 +50,26 @@ func TestSetupUtilityScripts(t *testing.T) {
 	assert.Nil(t, err)
 
 	// test whether the protected files remain
-	_, err = os.Stat(path.Join(tempRootBinDir, "platconf"))
+	_, err = os.Lstat(path.Join(tempRootBinDir, "platconf"))
 	assert.Nil(t, err)
-	_, err = os.Stat(path.Join(tempRootBinDir, "protonet_zpool.sh"))
+	_, err = os.Lstat(path.Join(tempRootBinDir, "protonet_zpool.sh"))
 	assert.Nil(t, err)
 
-	// test whether the dropped file is gone
-	_, err = os.Stat(path.Join(tempRootBinDir, "whatever.sh"))
+	// test whether the dropped script is gone
+	_, err = os.Lstat(path.Join(tempRootScriptsDir, "whatever.sh"))
+	assert.NotNil(t, err)
+	assert.True(t, os.IsNotExist(err))
+
+	// test whether the dropped symlink is gone
+	_, err = os.Lstat(path.Join(tempRootBinDir, "whatever-link"))
 	assert.NotNil(t, err)
 	assert.True(t, os.IsNotExist(err))
 
 	// test whether the new script got installed
-	_, err = os.Stat(path.Join(tempRootScriptsDir, "newscript.sh"))
+	_, err = os.Lstat(path.Join(tempRootScriptsDir, "newscript.sh"))
 	assert.Nil(t, err)
 
-	// TODO test symlinks
+	// test whether the new symlink got installed
+	_, err = os.Lstat(path.Join(tempRootBinDir, "newscript"))
+	assert.Nil(t, err)
 }

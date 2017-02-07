@@ -79,7 +79,7 @@ removeBindirContents:
 			}
 		}
 
-		if f.Mode().IsRegular() {
+		if !f.IsDir() {
 			log.Println("Removing old", basename)
 			err := os.Remove(fullpath)
 			if err != nil {
