@@ -20,6 +20,18 @@ type ReleaseManifestV2 struct {
 	Images          []ReleaseManifestV2Image `json:"images"`
 }
 
+// GetImageByName returns an image with a given full name from the manifest's
+// image array, or nil if the image is not included in the manifest
+func (rm *ReleaseManifestV2) GetImageByName(name string) *ReleaseManifestV2Image {
+	for _, img := range rm.Images {
+		if img.Name == name {
+			return &img
+		}
+	}
+
+	return nil
+}
+
 // ReleaseManifestV2Image describes an image entry in ReleaseManifestV2
 type ReleaseManifestV2Image struct {
 	Name        string `json:"name"`         // full image name w/ registry name minus tag

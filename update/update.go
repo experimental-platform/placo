@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -39,6 +40,23 @@ func runUpdate(specifiedChannel string, rootDir string) error {
 	channel, channelSource := getChannel(specifiedChannel)
 	logChannelDetection(channel, channelSource)
 
+	// get release data
+	releaseData, err := fetchReleaseData(channel)
+	if err != nil {
+		return err
+	}
+
+	// get & extract 'configure'
+	configureImgData := releaseData.GetImageByName("quay.io/experimentalplatform/configure")
+	if configureImgData == nil {
+		return fmt.Errorf("configure image data not found in the manifest")
+	}
+
+	configureExtractDir, err := extractConfigure(configureImgData.Name)
+	if err != nil {
+		return nil
+	}
+	defer os.RemoveAll(configureExtractDir)
 
 	// setup paths
 	fmt.Println("Creating folders in '/etc/systemd' in case they don't exist yet.")
@@ -103,4 +121,26 @@ func fetchReleaseJSON(channel string) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func extractConfigure(tag string) (string, error) {
+	tmpDir, err := ioutil.TempDir("", "platconf_")
+	if err != nil {
+		return "", err
+	}
+
+	log.Println("Pulling configure image")
+	err = pullImage("quay.io/experimentalplatform/configure", tag)
+	if err != nil {
+		return "", err
+	}
+
+	log.Println("Extracting configure image")
+	err = extractDockerImage("quay.io/experimentalplatform/configure", tag, tmpDir)
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return "", err
+	}
+
+	return tmpDir, nil
 }
