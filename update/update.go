@@ -57,6 +57,7 @@ func runUpdate() error {
 
 func setupPaths(rootPrefix string) error {
 	requiredPaths := []string{
+		"/etc/protonet",
 		"/etc/systemd/journal.conf.d",
 		"/etc/systemd/system",
 		"/etc/systemd/system/docker.service.d",
