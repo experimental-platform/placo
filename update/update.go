@@ -20,6 +20,9 @@ type Opts struct {
 func (o *Opts) Execute(args []string) error {
 	os.Setenv("DOCKER_API_VERSION", "1.22")
 
+	// TODO remove this later
+	log.Fatal("The update functionality is not yet available.")
+
 	err := runUpdate(o.Channel, "/")
 	if err != nil {
 		button(buttonError)
