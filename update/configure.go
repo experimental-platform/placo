@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/experimental-platform/platconf/platconf"
 )
 
 func copyFile(dst, src string, mode os.FileMode) error {
@@ -129,5 +131,55 @@ removeBindirContents:
 	}
 
 	log.Println("Done.")
+	return nil
+}
+
+func pullAllImages(manifest *platconf.ReleaseManifestV2) error {
+	// TODO add retry
+
+	type pullerMsg struct {
+		ImgName string
+		Error   error
+	}
+
+	imagesTotal := len(manifest.Images)
+	imagesChan := make(chan platconf.ReleaseManifestV2Image)
+	pullersTotal := 4
+	pullerChan := make(chan pullerMsg)
+
+	for i := 0; i < pullersTotal; i++ {
+		go func() {
+			for {
+				img, ok := <-imagesChan
+				if !ok {
+					return
+				}
+
+				err := pullImage(img.Name, img.Tag)
+				pullerChan <- pullerMsg{
+					ImgName: img.Name,
+					Error:   err,
+				}
+			}
+		}()
+	}
+
+	go func() {
+		for _, img := range manifest.Images {
+			imagesChan <- img
+		}
+	}()
+
+	for i := 0; i < imagesTotal; i++ {
+		msg := <-pullerChan
+		if msg.Error != nil {
+			log.Printf("Downloading '%s': FAILED", msg.ImgName)
+			log.Printf("Downloading '%s': %s", msg.ImgName, msg.Error.Error())
+			return msg.Error
+		}
+
+		log.Printf("Downloading '%s': OK", msg.ImgName)
+	}
+
 	return nil
 }
