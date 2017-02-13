@@ -71,9 +71,12 @@ func pullImage(repository, tag string) error {
 		return err
 	}
 
-	auth := docker.AuthConfiguration{}
+	auth, err := docker.NewAuthConfigurationsFromDockerCfg()
+	if err != nil {
+		return err
+	}
 
-	err = client.PullImage(opts, auth)
+	err = client.PullImage(opts, auth.Configs["quay.io"])
 	if err != nil {
 		return err
 	}
