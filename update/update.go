@@ -114,7 +114,13 @@ func fetchReleaseJSON(channel string) ([]byte, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode != 200 {
+	switch resp.StatusCode {
+	case http.StatusOK:
+		break
+	case http.StatusNotFound:
+		return nil, fmt.Errorf("No such channel: '%s'.", channel)
+		break
+	default:
 		return nil, fmt.Errorf("Response status code was %d.", resp.StatusCode)
 	}
 
