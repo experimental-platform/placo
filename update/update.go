@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 
 	"github.com/experimental-platform/platconf/platconf"
@@ -67,6 +68,35 @@ func runUpdate(specifiedChannel string, rootDir string) error {
 	if err != nil {
 		return err
 	}
+
+	// setup default hostname
+	hostameFilePath := path.Join(rootDir, "/etc/protonet/hostname")
+	if _, err = os.Stat(hostameFilePath); os.IsNotExist(err) {
+		ioutil.WriteFile(hostameFilePath, []byte("protonet"), 0644)
+	}
+
+	err = performOSUpdate()
+	if err != nil {
+		// we also get an error on a "no update" result, so this is fine
+		log.Println("update-engine returned error:", err.Error())
+	}
+
+	// TODO run configure
+	err = setupUtilityScripts(rootDir, configureExtractDir)
+	if err != nil {
+		return err
+	}
+
+	// END TODO run configure
+	err = pullAllImages(releaseData)
+	if err != nil {
+		return err
+	}
+
+	setStatus("done", nil, nil)
+
+	// TODO allow to skip the reboot
+	exec.Command("/usr/sbin/shutdown", "--reboot", "1")
 
 	return nil
 }
