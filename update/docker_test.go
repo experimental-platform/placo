@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
+	"strings"
 	"sync"
 	"testing"
 
@@ -67,16 +68,21 @@ func TestPullImage(t *testing.T) {
 	os.Setenv("DOCKER_HOST", srv.URL)
 	defer os.Setenv("DOCKER_HOST", "")
 
+	testAuth := strings.NewReader(`{"auths": {"quay.io": {"auth": "Zm9vOmJhcg==","email": ""} } }`)
+
 	// pull is OK
-	err := pullImage(testImageRepo, "v1")
+	testAuth.Seek(0, io.SeekStart)
+	err := pullImage(testImageRepo, "v1", testAuth)
 	assert.Nil(t, err)
 
 	// pull errored
-	err = pullImage(testImageRepo, "v2")
+	testAuth.Seek(0, io.SeekStart)
+	err = pullImage(testImageRepo, "v2", testAuth)
 	assert.EqualError(t, err, "Docker error: something bad happened")
 
 	// msg stream is cut off
-	err = pullImage(testImageRepo, "v3")
+	testAuth.Seek(0, io.SeekStart)
+	err = pullImage(testImageRepo, "v3", testAuth)
 	assert.Equal(t, err, io.ErrUnexpectedEOF)
 }
 

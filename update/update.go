@@ -169,7 +169,7 @@ func extractConfigure(tag string) (string, error) {
 	}
 
 	log.Println("Pulling configure image")
-	err = pullImage("quay.io/experimentalplatform/configure", tag)
+	err = pullImage("quay.io/experimentalplatform/configure", tag, nil)
 	if err != nil {
 		return "", err
 	}

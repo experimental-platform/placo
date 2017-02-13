@@ -56,7 +56,7 @@ func (jsed *jsonstreamErrorDetector) Write(p []byte) (n int, err error) {
 	return n, nil
 }
 
-func pullImage(repository, tag string) error {
+func pullImage(repository, tag string, authCfg io.Reader) error {
 	var jsed jsonstreamErrorDetector
 
 	opts := docker.PullImageOptions{
@@ -71,7 +71,12 @@ func pullImage(repository, tag string) error {
 		return err
 	}
 
-	auth, err := docker.NewAuthConfigurationsFromDockerCfg()
+	var auth *docker.AuthConfigurations
+	if authCfg == nil {
+		auth, err = docker.NewAuthConfigurationsFromDockerCfg()
+	} else {
+		auth, err = docker.NewAuthConfigurations(authCfg)
+	}
 	if err != nil {
 		return err
 	}

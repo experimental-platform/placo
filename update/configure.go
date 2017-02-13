@@ -155,7 +155,7 @@ func pullAllImages(manifest *platconf.ReleaseManifestV2) error {
 					return
 				}
 
-				err := pullImage(img.Name, img.Tag)
+				err := pullImage(img.Name, img.Tag, nil)
 				pullerChan <- pullerMsg{
 					ImgName: img.Name,
 					Error:   err,
