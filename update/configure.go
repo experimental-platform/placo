@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/experimental-platform/platconf/platconf"
@@ -179,6 +180,56 @@ func pullAllImages(manifest *platconf.ReleaseManifestV2) error {
 		}
 
 		log.Printf("Downloading '%s': OK", msg.ImgName)
+	}
+
+	return nil
+}
+
+func parseAllTemplates(rootDir, configureDir string, manifest *platconf.ReleaseManifestV2) error {
+	servicesDir := path.Join(configureDir, "services")
+
+	files, err := ioutil.ReadDir(servicesDir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if !f.Mode().IsRegular() {
+			return fmt.Errorf("parseAllTemplates: file '%s' is not a regular file", f.Name())
+		}
+
+		unitPath := path.Join(servicesDir, f.Name())
+		err = parseTemplate(unitPath, manifest)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func parseTemplate(path string, manifest *platconf.ReleaseManifestV2) error {
+	imgRegexp := regexp.MustCompile(`quay.io/[a-z]*/[a-z0-9\-]*`)
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	match := imgRegexp.FindString(string(data))
+	if match == "" {
+		return nil
+	}
+
+	imageManifest := manifest.GetImageByName(match)
+	if imageManifest == nil {
+		return fmt.Errorf("parseTemplate: image '%s' is not in the manifest", match)
+	}
+
+	tagRegexp := regexp.MustCompile(`{{tag}}`)
+	result := tagRegexp.ReplaceAll(data, []byte(imageManifest.Tag))
+
+	err = ioutil.WriteFile(path, result, 0644)
+	if err != nil {
+		return err
 	}
 
 	return nil
