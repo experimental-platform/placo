@@ -55,9 +55,9 @@ func runUpdate(specifiedChannel string, rootDir string) error {
 		return fmt.Errorf("configure image data not found in the manifest")
 	}
 
-	configureExtractDir, err := extractConfigure(configureImgData.Name)
+	configureExtractDir, err := extractConfigure(configureImgData.Tag)
 	if err != nil {
-		return nil
+		return err
 	}
 	defer os.RemoveAll(configureExtractDir)
 
