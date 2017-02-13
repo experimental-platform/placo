@@ -108,7 +108,7 @@ func fetchReleaseData(channel string) (*platconf.ReleaseManifestV2, error) {
 }
 
 func fetchReleaseJSON(channel string) ([]byte, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/%s.json", channel)
+	url := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", channel)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err

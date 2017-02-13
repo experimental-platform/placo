@@ -44,10 +44,10 @@ func TestFetchReleaseJSON(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	mockURL1 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/%s.json", testChannel)
+	mockURL1 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", testChannel)
 	httpmock.RegisterResponder("GET", mockURL1, httpmock.NewStringResponder(200, testBody))
 
-	mockURL2 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/%s.json", testChannelNoAccess)
+	mockURL2 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", testChannelNoAccess)
 	httpmock.RegisterResponder("GET", mockURL2, httpmock.NewStringResponder(403, "Access denied."))
 
 	data, err := fetchReleaseJSON(testChannel)
@@ -63,22 +63,22 @@ func TestFetchReleaseJSON(t *testing.T) {
 
 func TestFetchReleaseData(t *testing.T) {
 	testBody := `{
-	"build": 12345,
-	"codename": "Kaufman",
-	"url": "https://www.example.com/",
-	"published_at": "1990-12-31T23:59:60Z",
-	"images": [
-		{
-			"name": "quay.io/experiementalplatform/geilerserver",
-			"tag": "v1.2.3.4",
-			"pre_download": true
-		},
-		{
-			"name": "quay.io/protonet/rickroll",
-			"tag": "latest",
-			"pre_download": false
-		}
-	]
+  "build": 12345,
+  "codename": "Kaufman",
+  "url": "https://www.example.com/",
+  "published_at": "1990-12-31T23:59:60Z",
+  "images": [
+  	{
+  		"name": "quay.io/experiementalplatform/geilerserver",
+  		"tag": "v1.2.3.4",
+  		"pre_download": true
+  	},
+  	{
+  		"name": "quay.io/protonet/rickroll",
+  		"tag": "latest",
+  		"pre_download": false
+  	}
+  ]
 }`
 	testBrokenJSON := "213ewqsd"
 
@@ -106,9 +106,9 @@ func TestFetchReleaseData(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	mockURL1 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/%s.json", testChannel)
+	mockURL1 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", testChannel)
 	httpmock.RegisterResponder("GET", mockURL1, httpmock.NewStringResponder(200, testBody))
-	mockURL2 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/%s.json", testChannelBrokenJSON)
+	mockURL2 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", testChannelBrokenJSON)
 	httpmock.RegisterResponder("GET", mockURL2, httpmock.NewStringResponder(200, testBrokenJSON))
 
 	manifest, err := fetchReleaseData(testChannel)
