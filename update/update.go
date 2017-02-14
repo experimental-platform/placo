@@ -100,6 +100,11 @@ func runUpdate(specifiedChannel string, rootDir string) error {
 		return err
 	}
 
+	err = cleanupSystemd(rootDir)
+	if err != nil {
+		return err
+	}
+
 	setStatus("done", nil, nil)
 
 	// TODO allow to skip the reboot

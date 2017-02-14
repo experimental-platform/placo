@@ -350,3 +350,37 @@ func removePlatformUnits(dir string) error {
 
 	return nil
 }
+
+func cleanupSystemd(rootDir string) error {
+	systemDir := path.Join(rootDir, "etc/systemd/system")
+	networkDir := path.Join(rootDir, "etc/systemd/network")
+
+	log.Printf("Cleaning up '%s'\n", systemDir)
+
+	// First remove broken links, this should avoid confusing error messages
+	err := removeBrokenLinks(systemDir)
+	if err != nil {
+		return err
+	}
+
+	err = removePlatformUnits(systemDir)
+	if err != nil {
+		return err
+	}
+
+	// do it again to remove garbage
+	err = removeBrokenLinks(systemDir)
+	if err != nil {
+		return err
+	}
+
+	// remove network config files
+	err = removePlatformUnits(networkDir)
+	if err != nil {
+		return err
+	}
+
+	log.Println("DONE.")
+
+	return nil
+}
