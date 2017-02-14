@@ -141,7 +141,7 @@ removeBindirContents:
 	return nil
 }
 
-func pullAllImages(manifest *platconf.ReleaseManifestV2) error {
+func pullAllImages(manifest *platconf.ReleaseManifestV2, maxPullers int) error {
 	// TODO add retry
 
 	type pullerMsg struct {
@@ -151,10 +151,9 @@ func pullAllImages(manifest *platconf.ReleaseManifestV2) error {
 
 	imagesTotal := len(manifest.Images)
 	imagesChan := make(chan platconf.ReleaseManifestV2Image)
-	pullersTotal := 4
 	pullerChan := make(chan pullerMsg)
 
-	for i := 0; i < pullersTotal; i++ {
+	for i := 0; i < maxPullers; i++ {
 		go func() {
 			for {
 				img, ok := <-imagesChan

@@ -2,6 +2,7 @@ package update
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -16,6 +17,7 @@ import (
 // Opts contains command line parameters for the 'update' command
 type Opts struct {
 	Channel string `short:"c" long:"channel" description:"Channel to be installed"`
+	Pullers int    `short:"p" long:"pullers" description:"Maximum images being pulled at once" default:"4"`
 	//Force bool `short:"f" long:"force" description:"Force installing the current latest release"`
 }
 
@@ -23,10 +25,14 @@ type Opts struct {
 func (o *Opts) Execute(args []string) error {
 	os.Setenv("DOCKER_API_VERSION", "1.22")
 
+	if o.Pullers < 1 {
+		return errors.New("The maximum number of pullers must be > 0")
+	}
+
 	// TODO remove this later
 	log.Fatal("The update functionality is not yet available.")
 
-	err := runUpdate(o.Channel, "/")
+	err := runUpdate(o.Channel, "/", o.Pullers)
 	if err != nil {
 		button(buttonError)
 		fmt.Fprintln(os.Stderr, err)
@@ -36,7 +42,7 @@ func (o *Opts) Execute(args []string) error {
 	return nil
 }
 
-func runUpdate(specifiedChannel string, rootDir string) error {
+func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 	// prepare
 	platconf.RequireRoot()
 	button(buttonRainbow)
@@ -90,7 +96,7 @@ func runUpdate(specifiedChannel string, rootDir string) error {
 	}
 
 	// END TODO run configure
-	err = pullAllImages(releaseData)
+	err = pullAllImages(releaseData, maxPullers)
 	if err != nil {
 		return err
 	}
