@@ -1,6 +1,7 @@
 package update
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -289,6 +290,60 @@ func removeBrokenLinks(dir string) error {
 		}
 
 		if broken {
+			os.Remove(fullPath)
+		}
+	}
+
+	return nil
+}
+
+func isPlatformUnit(unitPath string) (bool, error) {
+	if !path.IsAbs(unitPath) {
+		return false, ErrIsRelative
+	}
+
+	stat, err := os.Lstat(unitPath)
+	if err != nil {
+		return false, err
+	}
+	if !stat.Mode().IsRegular() {
+		return false, nil
+	}
+
+	f, err := os.Open(unitPath)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	// is empty
+	if !scanner.Scan() {
+		return false, nil
+	}
+
+	// check for prefix instead of full line match in case of trailing spaces, etc.
+	return strings.HasPrefix(scanner.Text(), "# ExperimentalPlatform"), nil
+}
+
+func removePlatformUnits(dir string) error {
+	if !path.IsAbs(dir) {
+		return ErrIsRelative
+	}
+
+	entries, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range entries {
+		fullPath := path.Join(dir, f.Name())
+		isPlatform, err := isPlatformUnit(fullPath)
+		if err != nil {
+			return err
+		}
+
+		if isPlatform {
 			os.Remove(fullPath)
 		}
 	}
