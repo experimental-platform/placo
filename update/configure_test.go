@@ -319,6 +319,9 @@ func TestRemoveBrokenLinks(t *testing.T) {
 	assert.Nil(t, err)
 	defer os.RemoveAll(tempDir)
 
+	err = removeBrokenLinks("relative/path")
+	assert.Equal(t, ErrIsRelative, err)
+
 	// create a regular file
 	fullPath := path.Join(tempDir, "a_regular")
 	err = ioutil.WriteFile(fullPath, []byte{}, 0644)
