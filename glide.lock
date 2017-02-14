@@ -1,12 +1,14 @@
 hash: 90b2d8fd98b9a9c1a51cae0dfdce8803ef911b2071f0ad9014cd8f13ca83d863
-updated: 2017-02-02T15:17:24.67603008+01:00
+updated: 2017-02-14T16:51:06.783241513+01:00
 imports:
 - name: github.com/Azure/go-ansiterm
   version: fa152c58bc15761d0200cb75fe958b89a9d4888e
   subpackages:
   - winterm
+- name: github.com/coreos/go.dbus
+  version: f6a3a2366cc39b8479cadc499d3c735fb10fbdda
 - name: github.com/docker/docker
-  version: 2527cfcc49744f56a8d31c420a3ca4657f9fec2e
+  version: 092cba3727bb9b4a2f0e922cd6c0f93ea270e363
   subpackages:
   - api/types
   - api/types/blkiodev
@@ -46,7 +48,7 @@ imports:
 - name: github.com/hashicorp/go-cleanhttp
   version: ad28ea4487f05916463e2423a55166280e8254b5
 - name: github.com/jessevdk/go-flags
-  version: 8bc97d602c3bfeb5fc6fc9b5a9c898f245495637
+  version: 48cf8722c3375517aba351d1f7577c40663a4407
 - name: github.com/Microsoft/go-winio
   version: 24a3e3d3fc7451805e09d11e11e95d9a0a4f205e
 - name: github.com/opencontainers/runc
