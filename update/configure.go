@@ -1,6 +1,7 @@
 package update
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,10 @@ import (
 
 	"github.com/experimental-platform/platconf/platconf"
 )
+
+// ErrIsRelative is an error to be returned by functions that require
+// an absolute path when a relative path has been passed to them
+var ErrIsRelative = errors.New("a relative path was given")
 
 func copyFile(dst, src string, mode os.FileMode) error {
 	// only use absolute paths to prevent epic fails
@@ -230,6 +235,62 @@ func parseTemplate(path string, manifest *platconf.ReleaseManifestV2) error {
 	err = ioutil.WriteFile(path, result, 0644)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func isBrokenLink(nodePath string) (bool, error) {
+	if !path.IsAbs(nodePath) {
+		return false, ErrIsRelative
+	}
+
+	fileinfo, err := os.Lstat(nodePath)
+	if err != nil {
+		return false, err
+	}
+
+	// is it a symlink?
+	if fileinfo.Mode()&os.ModeSymlink == os.ModeSymlink {
+		dest, err := os.Readlink(nodePath)
+		if err != nil {
+			return false, err
+		}
+
+		var destFullPath string
+		if path.IsAbs(dest) {
+			destFullPath = dest
+		} else {
+			destFullPath = path.Join(path.Dir(nodePath), dest)
+		}
+
+		_, err = os.Lstat(destFullPath)
+		return err != nil, nil
+	}
+
+	return false, nil
+}
+
+func removeBrokenLinks(dir string) error {
+	if !path.IsAbs(dir) {
+		return ErrIsRelative
+	}
+
+	entries, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range entries {
+		fullPath := path.Join(dir, f.Name())
+		broken, err := isBrokenLink(fullPath)
+		if err != nil {
+			return err
+		}
+
+		if broken {
+			os.Remove(fullPath)
+		}
 	}
 
 	return nil

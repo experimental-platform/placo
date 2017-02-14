@@ -243,3 +243,116 @@ WantedBy=multi-user.target`
 
 	assert.Equal(t, parsedUnit, string(readData))
 }
+
+func TestIsBrokenLink(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "platconf-unittest-")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// fail on relativePath
+	_, err = isBrokenLink("relative/path")
+	assert.Equal(t, ErrIsRelative, err)
+
+	// a regular file
+	fullPath := path.Join(tempDir, "regular")
+	err = ioutil.WriteFile(fullPath, []byte{}, 0644)
+	assert.Nil(t, err)
+	isBroken, err := isBrokenLink(fullPath)
+	assert.Nil(t, err)
+	assert.False(t, isBroken)
+
+	// a directory
+	fullPath = path.Join(tempDir, "some_dir")
+	err = os.Mkdir(fullPath, 0755)
+	assert.Nil(t, err)
+	isBroken, err = isBrokenLink(fullPath)
+	assert.Nil(t, err)
+	assert.False(t, isBroken)
+
+	// a correct link (relative)
+	// create existing target
+	err = ioutil.WriteFile(path.Join(tempDir, "existing-target-relative"), []byte{}, 0644)
+	assert.Nil(t, err)
+	// create symlink
+	fullPath = path.Join(tempDir, "correct-symlink-relative")
+	err = os.Symlink("existing-target-relative", fullPath)
+	assert.Nil(t, err)
+	// test
+	isBroken, err = isBrokenLink(fullPath)
+	assert.Nil(t, err)
+	assert.False(t, isBroken)
+
+	// a broken link (relative)
+	// create symlink
+	fullPath = path.Join(tempDir, "broken-symlink-relative")
+	err = os.Symlink("absent-target-relative", fullPath)
+	assert.Nil(t, err)
+	// test
+	isBroken, err = isBrokenLink(fullPath)
+	assert.Nil(t, err)
+	assert.True(t, isBroken)
+
+	// a correct link (absolute)
+	// create symlink
+	fullPath = path.Join(tempDir, "correct-symlink-absolute")
+	err = os.Symlink("/dev/null", fullPath)
+	assert.Nil(t, err)
+	// test
+	isBroken, err = isBrokenLink(fullPath)
+	assert.Nil(t, err)
+	assert.False(t, isBroken)
+
+	// a broken link (absolute)
+	// create symlink
+	fullPath = path.Join(tempDir, "broken-symlink-absolute")
+	err = os.Symlink("/dev/absent-target-relative", fullPath)
+	assert.Nil(t, err)
+	// test
+	isBroken, err = isBrokenLink(fullPath)
+	assert.Nil(t, err)
+	assert.True(t, isBroken)
+}
+
+func TestRemoveBrokenLinks(t *testing.T) {
+	//isBrokenLink
+	tempDir, err := ioutil.TempDir("", "platconf-unittest-")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// create a regular file
+	fullPath := path.Join(tempDir, "a_regular")
+	err = ioutil.WriteFile(fullPath, []byte{}, 0644)
+	assert.Nil(t, err)
+
+	// create a directory
+	fullPath = path.Join(tempDir, "b_some_dir")
+	err = os.Mkdir(fullPath, 0755)
+	assert.Nil(t, err)
+
+	// a correct link (relative)
+	fullPath = path.Join(tempDir, "c_correct-symlink-relative")
+	err = os.Symlink("a_regular", fullPath)
+	assert.Nil(t, err)
+
+	// a broken link (relative)
+	fullPath = path.Join(tempDir, "d_broken-symlink-relative")
+	err = os.Symlink("z_absent-target-relative", fullPath)
+	assert.Nil(t, err)
+
+	// a correct link (absolute)
+	fullPath = path.Join(tempDir, "e_correct-symlink-absolute")
+	err = os.Symlink("/dev/null", fullPath)
+	assert.Nil(t, err)
+
+	// a broken link (absolute)
+	fullPath = path.Join(tempDir, "f_broken-symlink-absolute")
+	err = os.Symlink("/dev/absent-target-relative", fullPath)
+	assert.Nil(t, err)
+
+	err = removeBrokenLinks(tempDir)
+	assert.Nil(t, err)
+
+	fileinfo, err := ioutil.ReadDir(tempDir)
+	assert.Nil(t, err)
+	assert.Len(t, fileinfo, 4)
+}
