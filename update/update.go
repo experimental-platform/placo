@@ -13,11 +13,13 @@ import (
 	"github.com/experimental-platform/platconf/platconf"
 )
 
+// Opts contains command line parameters for the 'update' command
 type Opts struct {
 	Channel string `short:"c" long:"channel" description:"Channel to be installed"`
 	//Force bool `short:"f" long:"force" description:"Force installing the current latest release"`
 }
 
+// Execute is the function ran when the 'update' command is used
 func (o *Opts) Execute(args []string) error {
 	os.Setenv("DOCKER_API_VERSION", "1.22")
 
@@ -153,10 +155,9 @@ func fetchReleaseJSON(channel string) ([]byte, error) {
 	case http.StatusOK:
 		break
 	case http.StatusNotFound:
-		return nil, fmt.Errorf("No such channel: '%s'.", channel)
-		break
+		return nil, fmt.Errorf("no such channel: '%s'", channel)
 	default:
-		return nil, fmt.Errorf("Response status code was %d.", resp.StatusCode)
+		return nil, fmt.Errorf("response status code was %d", resp.StatusCode)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)

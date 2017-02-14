@@ -84,7 +84,7 @@ removeBindirContents:
 
 		if !f.IsDir() {
 			log.Println("Removing old", basename)
-			err := os.Remove(fullpath)
+			err = os.Remove(fullpath)
 			if err != nil {
 				return fmt.Errorf("Failed to remove '%s': %s", fullpath, err.Error())
 			}
@@ -102,7 +102,7 @@ removeBindirContents:
 		basename := f.Name()
 		if f.Mode().IsRegular() {
 			log.Println("Removing old", basename)
-			err := os.Remove(fullpath)
+			err = os.Remove(fullpath)
 			if err != nil {
 				return err
 			}
