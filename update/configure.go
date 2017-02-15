@@ -493,3 +493,43 @@ func setupSystemD(rootDir, configureDir string) error {
 
 	return nil
 }
+
+func setupChannelFile(channelFilePath, channel string) error {
+	currentChannel, err := ioutil.ReadFile(channelFilePath)
+	if err == nil && string(currentChannel) == channel {
+		return nil
+	}
+
+	err = systemdStopUnit("trigger-update-protonet.path")
+	if err != nil {
+		return err
+	}
+	defer systemdRestartUnit("trigger-update-protonet.path")
+
+	return ioutil.WriteFile(channelFilePath, []byte(channel), 0644)
+}
+
+func finalize(manifest *platconf.ReleaseManifestV2, rootDir string) error {
+	err := ioutil.WriteFile(path.Join(rootDir, "etc/protonet/system/release_number"), []byte(fmt.Sprintf("%d", manifest.Build)), 0644)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(path.Join(rootDir, "etc/protonet/system/codename"), []byte(manifest.Codename), 0644)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(path.Join(rootDir, "etc/protonet/system/release_notes_url"), []byte(manifest.ReleaseNotesURL), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removeOldImages() error {
+	// TODO
+
+	return nil
+}

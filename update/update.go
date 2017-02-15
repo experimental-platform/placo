@@ -121,6 +121,18 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 		return err
 	}
 
+	err = setupChannelFile(path.Join(rootDir, "etc/protonet/system/channel"), channel)
+	if err != nil {
+		return err
+	}
+
+	setStatus("finalizing", nil, nil)
+
+	err = finalize(releaseData, rootDir)
+	if err != nil {
+		return err
+	}
+
 	setStatus("done", nil, nil)
 
 	// TODO allow to skip the reboot
