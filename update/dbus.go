@@ -21,3 +21,19 @@ func systemdDaemonReload() error {
 
 	return nil
 }
+
+func systemdEnableUnits(units []string) error {
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return fmt.Errorf("failed to connect to session bus: %s", err.Error())
+	}
+
+	object := conn.Object("org.freedesktop.systemd1", "/org/freedesktop/systemd1")
+	call := object.Call("org.freedesktop.systemd1.Manager.EnableUnitFiles", 0, units, false, true)
+
+	if call.Err != nil {
+		return fmt.Errorf("enabling units %v: %s", units, call.Err.Error())
+	}
+
+	return nil
+}

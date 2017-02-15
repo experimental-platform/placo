@@ -401,3 +401,95 @@ func setupUdev(rootDir, configureDir string) error {
 
 	return nil
 }
+
+func setupSystemD(rootDir, configureDir string) error {
+	log.Println("Setting up systemD services")
+
+	// copy normal units
+	serviceFiles, err := ioutil.ReadDir(path.Join(configureDir, "services"))
+	if err != nil {
+		return err
+	}
+
+	for _, sf := range serviceFiles {
+		src := path.Join(configureDir, "services", sf.Name())
+		dst := path.Join(rootDir, "etc/systemd/system", sf.Name())
+		err = copyFile(dst, src, 0644)
+		if err != nil {
+			return err
+		}
+	}
+
+	// copy docker log override
+	src := path.Join(configureDir, "config/50-log-warn.conf")
+	dst := path.Join(rootDir, "etc/systemd/system/docker.service.d/50-log-warn.conf")
+	err = copyFile(dst, src, 0644)
+	if err != nil {
+		return err
+	}
+
+	// copy journalD config
+	src = path.Join(configureDir, "config/journald_protonet.conf")
+	dst = path.Join(rootDir, "etc/systemd/journald.conf.d/journald_protonet.conf")
+	err = copyFile(dst, src, 0644)
+	if err != nil {
+		return err
+	}
+
+	// copy klog config
+	src = path.Join(configureDir, "config/sysctl-klog.conf")
+	dst = path.Join(rootDir, "etc/sysctl.d/sysctl-klog.conf")
+	err = copyFile(dst, src, 0644)
+	if err != nil {
+		return err
+	}
+
+	// copy network config files
+	networkFiles, err := ioutil.ReadDir(path.Join(configureDir, "config"))
+	if err != nil {
+		return err
+	}
+
+	for _, sf := range networkFiles {
+		if strings.HasSuffix(sf.Name(), ".network") {
+			src = path.Join(configureDir, "config", sf.Name())
+			dst = path.Join(rootDir, "etc/systemd/network", sf.Name())
+			err = copyFile(dst, src, 0644)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// reload all the things
+	log.Println("Reloading the config files.")
+	err = systemdDaemonReload()
+	if err != nil {
+		return err
+	}
+
+	// enable the systemd-networkd-wait-online.service
+	err = systemdEnableUnits([]string{"systemd-networkd-wait-online.service"})
+	if err != nil {
+		return err
+	}
+
+	// enable everything
+	log.Println("Enabling all config files")
+	units, err := ioutil.ReadDir(path.Join(rootDir, "etc/systemd/system"))
+	if err != nil {
+		return err
+	}
+
+	// TODO maybe do this in one go?
+	for _, u := range units {
+		if !strings.HasSuffix(u.Name(), ".sh") && u.Mode().IsRegular() {
+			err = systemdEnableUnits([]string{u.Name()})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
