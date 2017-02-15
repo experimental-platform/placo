@@ -111,6 +111,11 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 		return err
 	}
 
+	err = setupUdev(rootDir, configureExtractDir)
+	if err != nil {
+		return err
+	}
+
 	setStatus("done", nil, nil)
 
 	// TODO allow to skip the reboot

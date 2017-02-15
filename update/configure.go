@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strings"
@@ -380,6 +381,23 @@ func cleanupSystemd(rootDir string) error {
 	}
 
 	log.Println("DONE.")
+
+	return nil
+}
+
+func setupUdev(rootDir, configureDir string) error {
+	log.Println("Setting up udev rules")
+	src := path.Join(configureDir, "config", "80-protonet.rules")
+	dst := path.Join(rootDir, "etc/udev/rules.d", "80-protonet.rules")
+
+	err := copyFile(dst, src, 0644)
+	if err != nil {
+		return err
+	}
+
+	// TODO don't restart udev if file wasn't changed
+	cmd := exec.Command("/usr/bin/udevadm", "control", "--reload-rules")
+	cmd.Run()
 
 	return nil
 }
