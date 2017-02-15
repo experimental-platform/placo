@@ -29,9 +29,6 @@ func (o *Opts) Execute(args []string) error {
 		return errors.New("The maximum number of pullers must be > 0")
 	}
 
-	// TODO remove this later
-	log.Fatal("The update functionality is not yet available.")
-
 	err := runUpdate(o.Channel, "/", o.Pullers)
 	if err != nil {
 		button(buttonError)
