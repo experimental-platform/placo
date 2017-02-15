@@ -92,6 +92,11 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 		return err
 	}
 
+	err = setupBinaries(rootDir, configureExtractDir)
+	if err != nil {
+		return err
+	}
+
 	// END TODO run configure
 	err = pullAllImages(releaseData, maxPullers)
 	if err != nil {

@@ -142,6 +142,54 @@ removeBindirContents:
 	return nil
 }
 
+func setupBinaries(rootDir, configureDir string) error {
+	binDir := path.Join(rootDir, "opt", "bin")
+
+	uniqueBinaries := []string{
+		"button",
+		"tcpdump",
+		"speedtest",
+		"masterpassword",
+		"ipmitool",
+		"self_destruct",
+	}
+
+	// unique binaries first
+	for _, b := range uniqueBinaries {
+		if b == "platconf" {
+			log.Printf("WARNING: setupBinaries tried to overwrite platconf with '%s'", path.Join(configureDir, "platconf"))
+			continue
+		}
+		src := path.Join(configureDir, b)
+		dst := path.Join(binDir, b)
+		err := copyFile(dst, src, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	// now the Go binaries
+	goBinaries, err := ioutil.ReadDir(path.Join(configureDir, "binaries"))
+	if err != nil {
+		return err
+	}
+
+	for _, b := range goBinaries {
+		if b.Name() == "platconf" {
+			log.Printf("WARNING: setupBinaries tried to overwrite platconf with '%s'", path.Join(configureDir, "binaries/platconf"))
+			continue
+		}
+		dst := path.Join(binDir, b.Name())
+		src := path.Join(configureDir, "binaries", b.Name())
+		err := copyFile(dst, src, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func pullAllImages(manifest *platconf.ReleaseManifestV2, maxPullers int) error {
 	// TODO add retry
 
