@@ -86,7 +86,6 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 		log.Println("update-engine returned error:", err.Error())
 	}
 
-	// TODO run configure
 	err = setupUtilityScripts(rootDir, configureExtractDir)
 	if err != nil {
 		return err
@@ -97,7 +96,6 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 		return err
 	}
 
-	// END TODO run configure
 	err = pullAllImages(releaseData, maxPullers)
 	if err != nil {
 		return err
