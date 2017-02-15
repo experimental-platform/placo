@@ -114,7 +114,9 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 	setStatus("done", nil, nil)
 
 	// TODO allow to skip the reboot
-	exec.Command("/usr/sbin/shutdown", "--reboot", "1")
+	log.Println("Triggering a reboot")
+	rebootCmd := exec.Command("/usr/sbin/shutdown", "--reboot", "1")
+	rebootCmd.Run()
 
 	return nil
 }
