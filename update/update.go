@@ -191,21 +191,24 @@ func setupPaths(rootPrefix string) error {
 }
 
 func fetchReleaseData(channel string) (*platconf.ReleaseManifestV2, error) {
-	data, err := fetchReleaseJSON(channel)
+	data, err := fetchReleaseDataV2(channel)
 	if err != nil {
-		return nil, err
+		log.Printf("Couldnt fetch manifest v2: %s\n", err.Error())
+		log.Printf("Trying v1\n")
+		// Manifest v2 not found, trying v1
+
+		dataV1, err := fetchReleaseDataV1(channel)
+		if err != nil {
+			return nil, err
+		}
+
+		return dataV1.ToV2(), nil
 	}
 
-	var manifest platconf.ReleaseManifestV2
-	err = json.Unmarshal(data, &manifest)
-	if err != nil {
-		return nil, err
-	}
-
-	return &manifest, nil
+	return data, nil
 }
 
-func fetchReleaseJSON(channel string) ([]byte, error) {
+func fetchReleaseJSONv2(channel string) ([]byte, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", channel)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -227,6 +230,64 @@ func fetchReleaseJSON(channel string) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func fetchReleaseDataV2(channel string) (*platconf.ReleaseManifestV2, error) {
+	data, err := fetchReleaseJSONv2(channel)
+	if err != nil {
+		return nil, err
+	}
+
+	var manifest platconf.ReleaseManifestV2
+	err = json.Unmarshal(data, &manifest)
+	if err != nil {
+		return nil, err
+	}
+
+	return &manifest, nil
+}
+
+func fetchReleaseJSONv1(channel string) ([]byte, error) {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/%s.json", channel)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		break
+	case http.StatusNotFound:
+		return nil, fmt.Errorf("no such channel: '%s'", channel)
+	default:
+		return nil, fmt.Errorf("response status code was %d", resp.StatusCode)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func fetchReleaseDataV1(channel string) (*platconf.ReleaseManifestV1, error) {
+	data, err := fetchReleaseJSONv1(channel)
+	if err != nil {
+		return nil, err
+	}
+
+	var manifest []platconf.ReleaseManifestV1
+	err = json.Unmarshal(data, &manifest)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(manifest) != 1 {
+		return nil, fmt.Errorf("the size of the manifest array was %d", len(manifest))
+	}
+
+	return &manifest[0], nil
 }
 
 func extractConfigure(tag string) (string, error) {

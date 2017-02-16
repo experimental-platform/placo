@@ -50,14 +50,14 @@ func TestFetchReleaseJSON(t *testing.T) {
 	mockURL2 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", testChannelNoAccess)
 	httpmock.RegisterResponder("GET", mockURL2, httpmock.NewStringResponder(403, "Access denied."))
 
-	data, err := fetchReleaseJSON(testChannel)
+	data, err := fetchReleaseJSONv2(testChannel)
 	assert.Nil(t, err)
 	assert.Equal(t, len(testBody), len(data))
 
-	_, err = fetchReleaseJSON(testChannelNoAccess)
+	_, err = fetchReleaseJSONv2(testChannelNoAccess)
 	assert.NotNil(t, err)
 
-	_, err = fetchReleaseJSON("noSuchChannel")
+	_, err = fetchReleaseJSONv2("noSuchChannel")
 	assert.NotNil(t, err)
 }
 
@@ -111,11 +111,11 @@ func TestFetchReleaseData(t *testing.T) {
 	mockURL2 := fmt.Sprintf("https://raw.githubusercontent.com/protonet/builds/master/manifest-v2/%s.json", testChannelBrokenJSON)
 	httpmock.RegisterResponder("GET", mockURL2, httpmock.NewStringResponder(200, testBrokenJSON))
 
-	manifest, err := fetchReleaseData(testChannel)
+	manifest, err := fetchReleaseDataV2(testChannel)
 	assert.Nil(t, err)
 	assert.NotNil(t, manifest)
 	assert.EqualValues(t, expectedJSON, *manifest)
 
-	_, err = fetchReleaseData(testChannelBrokenJSON)
+	_, err = fetchReleaseDataV2(testChannelBrokenJSON)
 	assert.NotNil(t, err)
 }

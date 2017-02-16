@@ -10,6 +10,27 @@ type ReleaseManifestV1 struct {
 	Images      map[string]string `json:"images"`
 }
 
+// ToV2 converts a manifest from v1 to v2
+func (rm *ReleaseManifestV1) ToV2() *ReleaseManifestV2 {
+	v2 := ReleaseManifestV2{
+		Build:           rm.Build,
+		Codename:        rm.Codename,
+		ReleaseNotesURL: rm.URL,
+		PublishedAt:     rm.PublishedAt,
+		Images:          []ReleaseManifestV2Image{},
+	}
+
+	for k, v := range rm.Images {
+		v2.Images = append(v2.Images, ReleaseManifestV2Image{
+			Name:        k,
+			Tag:         v,
+			PreDownload: true,
+		})
+	}
+
+	return &v2
+}
+
 // ReleaseManifestV2 describes the build manifests introduced for platconf
 // by Kamil in early 2017
 type ReleaseManifestV2 struct {
