@@ -1,5 +1,5 @@
 hash: 90b2d8fd98b9a9c1a51cae0dfdce8803ef911b2071f0ad9014cd8f13ca83d863
-updated: 2017-02-14T16:51:06.783241513+01:00
+updated: 2017-02-16T13:20:47.12867962+01:00
 imports:
 - name: github.com/Azure/go-ansiterm
   version: fa152c58bc15761d0200cb75fe958b89a9d4888e
@@ -51,6 +51,8 @@ imports:
   version: 48cf8722c3375517aba351d1f7577c40663a4407
 - name: github.com/Microsoft/go-winio
   version: 24a3e3d3fc7451805e09d11e11e95d9a0a4f205e
+- name: github.com/nightlyone/lockfile
+  version: 1d49c987357a327b5b03aa84cbddd582c328615d
 - name: github.com/opencontainers/runc
   version: 1e4ca86a7249beba40ba3037c4acb9a26d07fc38
   subpackages:

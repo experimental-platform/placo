@@ -12,7 +12,10 @@ import (
 	"path"
 
 	"github.com/experimental-platform/platconf/platconf"
+	"github.com/nightlyone/lockfile"
 )
+
+var lockfilePath = "/var/run/platconf.lock"
 
 // Opts contains command line parameters for the 'update' command
 type Opts struct {
@@ -30,6 +33,8 @@ func (o *Opts) Execute(args []string) error {
 	}
 
 	platconf.RequireRoot()
+	lock := tryLockUpdate(lockfilePath)
+	defer lock.Unlock()
 
 	err := runUpdate(o.Channel, "/", o.Pullers)
 	if err != nil {
@@ -142,6 +147,26 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 	rebootCmd.Run()
 
 	return nil
+}
+
+func tryLockUpdate(path string) *lockfile.Lockfile {
+	lock, err := lockfile.New(lockfilePath)
+	if err != nil {
+		panic(err)
+	}
+	err = lock.TryLock()
+	if err != nil {
+		if err == lockfile.ErrBusy {
+			log.Println("another platconf instance is already running an update")
+			os.Exit(1)
+		}
+
+		log.Println("Failed to obtain lock", lockfilePath)
+		log.Println(err)
+		os.Exit(1)
+	}
+
+	return &lock
 }
 
 func setupPaths(rootPrefix string) error {
