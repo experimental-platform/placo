@@ -29,6 +29,8 @@ func (o *Opts) Execute(args []string) error {
 		return errors.New("The maximum number of pullers must be > 0")
 	}
 
+	platconf.RequireRoot()
+
 	err := runUpdate(o.Channel, "/", o.Pullers)
 	if err != nil {
 		button(buttonError)
@@ -41,7 +43,6 @@ func (o *Opts) Execute(args []string) error {
 
 func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 	// prepare
-	platconf.RequireRoot()
 	button(buttonRainbow)
 	setStatus("preparing", nil, nil)
 
