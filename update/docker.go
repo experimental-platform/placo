@@ -73,7 +73,9 @@ func pullImage(repository, tag string, authCfg io.Reader) error {
 
 	var auth *docker.AuthConfigurations
 	if authCfg == nil {
-		auth, err = docker.NewAuthConfigurationsFromDockerCfg()
+		// the full path to the config file is provided,
+		// since running from a systemd unit doesn't provide $HOME
+		auth, err = docker.NewAuthConfigurationsFromFile("/root/.docker/config.json")
 	} else {
 		auth, err = docker.NewAuthConfigurations(authCfg)
 	}
