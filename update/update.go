@@ -19,8 +19,9 @@ var lockfilePath = "/var/run/platconf.lock"
 
 // Opts contains command line parameters for the 'update' command
 type Opts struct {
-	Channel string `short:"c" long:"channel" description:"Channel to be installed"`
-	Pullers int    `short:"p" long:"pullers" description:"Maximum images being pulled at once" default:"4"`
+	Channel     string `short:"c" long:"channel" description:"Channel to be installed"`
+	Pullers     int    `short:"p" long:"pullers" description:"Maximum images being pulled at once" default:"4"`
+	PullRetries int    `short:"r" long:"pull-retries" description:"Maximum number of attempts to pull an image" default:"5"`
 	//Force bool `short:"f" long:"force" description:"Force installing the current latest release"`
 }
 
@@ -36,7 +37,7 @@ func (o *Opts) Execute(args []string) error {
 	lock := tryLockUpdate(lockfilePath)
 	defer lock.Unlock()
 
-	err := runUpdate(o.Channel, "/", o.Pullers)
+	err := runUpdate(o.Channel, "/", o.Pullers, o.PullRetries)
 	if err != nil {
 		button(buttonError)
 		fmt.Fprintln(os.Stderr, err)
@@ -46,7 +47,7 @@ func (o *Opts) Execute(args []string) error {
 	return nil
 }
 
-func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
+func runUpdate(specifiedChannel string, rootDir string, maxPullers, maxPullRetries int) error {
 	// prepare
 	button(buttonRainbow)
 	setStatus("preparing", nil, nil)
@@ -102,7 +103,7 @@ func runUpdate(specifiedChannel string, rootDir string, maxPullers int) error {
 		return err
 	}
 
-	err = pullAllImages(releaseData, maxPullers)
+	err = pullAllImages(releaseData, maxPullers, maxPullRetries)
 	if err != nil {
 		return err
 	}
@@ -195,7 +196,6 @@ func fetchReleaseData(channel string) (*platconf.ReleaseManifestV2, error) {
 	if err != nil {
 		log.Printf("Couldnt fetch manifest v2: %s\n", err.Error())
 		log.Printf("Trying v1\n")
-		// Manifest v2 not found, trying v1
 
 		dataV1, err := fetchReleaseDataV1(channel)
 		if err != nil {
@@ -284,7 +284,7 @@ func fetchReleaseDataV1(channel string) (*platconf.ReleaseManifestV1, error) {
 	}
 
 	if len(manifest) != 1 {
-		return nil, fmt.Errorf("the size of the manifest array was %d", len(manifest))
+		return nil, fmt.Errorf("the length of the manifest array is %d", len(manifest))
 	}
 
 	return &manifest[0], nil

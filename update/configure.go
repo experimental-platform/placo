@@ -190,12 +190,13 @@ func setupBinaries(rootDir, configureDir string) error {
 	return nil
 }
 
-func pullAllImages(manifest *platconf.ReleaseManifestV2, maxPullers int) error {
+func pullAllImages(manifest *platconf.ReleaseManifestV2, maxPullers, maxRetries int) error {
 	// TODO add retry
 
 	type pullerMsg struct {
 		ImgName string
 		Error   error
+		Retry   int
 	}
 
 	imagesTotal := len(manifest.Images)
@@ -204,16 +205,25 @@ func pullAllImages(manifest *platconf.ReleaseManifestV2, maxPullers int) error {
 
 	for i := 0; i < maxPullers; i++ {
 		go func() {
+		PullNextImage:
 			for {
 				img, ok := <-imagesChan
 				if !ok {
 					return
 				}
 
-				err := pullImage(img.Name, img.Tag, nil)
-				pullerChan <- pullerMsg{
-					ImgName: img.Name,
-					Error:   err,
+				for retry := 1; retry <= maxRetries; retry++ {
+					err := pullImage(img.Name, img.Tag, nil)
+
+					pullerChan <- pullerMsg{
+						ImgName: img.Name,
+						Error:   nil,
+						Retry:   retry,
+					}
+
+					if err == nil {
+						continue PullNextImage
+					}
 				}
 			}
 		}()
@@ -225,15 +235,21 @@ func pullAllImages(manifest *platconf.ReleaseManifestV2, maxPullers int) error {
 		}
 	}()
 
-	for i := 0; i < imagesTotal; i++ {
+	for i := 0; i < imagesTotal; {
 		msg := <-pullerChan
 		if msg.Error != nil {
-			log.Printf("Downloading '%s': FAILED", msg.ImgName)
-			log.Printf("Downloading '%s': %s", msg.ImgName, msg.Error.Error())
-			return msg.Error
+			if msg.Retry == maxRetries {
+				log.Printf("Downloading '%s': FAILED", msg.ImgName)
+				log.Printf("Downloading '%s': %s", msg.ImgName, msg.Error.Error())
+				return msg.Error
+			} else {
+				log.Printf("Downloading '%s': RETRYING", msg.ImgName)
+				log.Printf("Downloading '%s': %s", msg.ImgName, msg.Error.Error())
+			}
+		} else {
+			log.Printf("Downloading '%s': OK", msg.ImgName)
+			i++
 		}
-
-		log.Printf("Downloading '%s': OK", msg.ImgName)
 	}
 
 	return nil
