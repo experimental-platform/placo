@@ -559,9 +559,15 @@ func setupSystemD(rootDir, configureDir string) error {
 }
 
 func setupChannelFile(channelFilePath, channel string) error {
+	log.Println("Writing the channel file")
 	currentChannel, err := ioutil.ReadFile(channelFilePath)
 	if err == nil && string(currentChannel) == channel {
 		return nil
+	}
+
+	err = systemdDaemonReload()
+	if err != nil {
+		return err
 	}
 
 	err = systemdStopUnit("trigger-update-protonet.path")
