@@ -173,7 +173,7 @@ func tryLockUpdate(path string) *lockfile.Lockfile {
 func setupPaths(rootPrefix string) error {
 	requiredPaths := []string{
 		"/etc/protonet",
-		"/etc/systemd/journal.conf.d",
+		"/etc/systemd/journald.conf.d",
 		"/etc/systemd/system",
 		"/etc/systemd/system/docker.service.d",
 		"/etc/systemd/system/scripts",

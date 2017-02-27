@@ -21,7 +21,7 @@ func TestUpdateSetupPaths(t *testing.T) {
 	assert.Nil(t, err)
 
 	requiredPaths := []string{
-		"/etc/systemd/journal.conf.d",
+		"/etc/systemd/journald.conf.d",
 		"/etc/systemd/system",
 		"/etc/systemd/system/docker.service.d",
 		"/etc/systemd/system/scripts",
