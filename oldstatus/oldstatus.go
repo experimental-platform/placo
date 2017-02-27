@@ -57,7 +57,8 @@ func watchStatusFileForChange(status *StatusData, filePath string) error {
 
 	err = watcher.Add(filePath)
 	if err != nil {
-		log.Fatalf("Failed to add file '%s' to the file watcher: %s", filePath, err.Error())
+		log.Println("Failed to add file '%s' to the file watcher: %s", filePath, err.Error())
+		return err
 	}
 
 	log.Println("Status file watcher started on", filePath)
