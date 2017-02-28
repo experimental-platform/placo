@@ -40,6 +40,8 @@ func (o *Opts) Execute(args []string) error {
 	err := runUpdate(o.Channel, "/", o.Pullers, o.PullRetries)
 	if err != nil {
 		button(buttonError)
+		errMsg := err.Error()
+		setStatus("failed", nil, &errMsg)
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
